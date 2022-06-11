@@ -1,6 +1,5 @@
 import React from 'react';
 import { useState, useEffect } from 'react';
-
 import { FiltersWrapper, Orderings, CurrencyFilters, CurrencyButton } from '../styles/ComponentStyles';
 
 
@@ -17,35 +16,44 @@ export default function CurrencyFilter({ setFilteredList, spendings }) {
   }
 
   useEffect(() => {
+    setSortType(sortType);
     const sortArray = type => {
       const types = {
-        '-date': 'date',
-        'date': 'date',
+        '-date': 'spent_at',
+        'date': 'spent_at',
         '-amount_in_huf': 'amount',
         'amount_in_huf': 'amount',
       };
+
       const sortProperty = types[type];
-      const sorted = [...spendings].sort((a, b) => {
-        if(type==='-date'){
-          return b[sortProperty] - a[sortProperty] ? 1 : -1
-        } else if(type==='date'){
+      function sortByAmCur(a, b, sortAsc = true) {
+        let val1 = a[sortProperty];
+        let val2 = b[sortProperty];
 
-          return a[sortProperty] - b[sortProperty] ? 1 : -1
-        } else if(type==='-amount_in_huf'){
-
-          return a[sortProperty] < b[sortProperty] ? 1 : -1
-        } else if(type==='amount_in_huf'){
-
-          return a[sortProperty] > b[sortProperty] ? 1 : -1
+        if(a.currency=== 'USD' && a[sortProperty]===a.amount){
+          val1 *= 378;
+        } else if (b.currency=== 'USD' && b[sortProperty]===b.amount){
+          val2 *= 378;
         }
+        let result = ((val1 < val2) ? -1 : ((val1 > val2) ? 1 : 0));
+        if (!sortAsc) {
+          result *= -1;
+        }
+        return result;
+      }
+      const sorted = [...spendings].sort((a, b) => {
+        let result = [];
+        if (type === '-date' || type === '-amount_in_huf') {
+          result = sortByAmCur(a, b, false);
+        } else if (type === 'date' || type === 'amount_in_huf') {
+          result = sortByAmCur(a, b, true);
+        }
+        return result;
       });
       setFilteredList(sorted);
     };
-
     sortArray(sortType);
-  }, [sortType]);
-
-  // setFilteredList(spendings.sort((a,b) =>  new Date(b.spent_at) - new Date(a.spent_at)));
+  }, [sortType, spendings, setFilteredList]);
 
 
   return (
